@@ -1,6 +1,8 @@
 import carros2024 from './tabelacarros.js';
 import express from 'express';
 
+import { modeloCarro, modeloAtualizacaoCarro } from './validacao.js';
+
 const app = express();
 
 app.use(express.json());
@@ -26,9 +28,21 @@ app.get('/:sigla', (requisicao, resposta) => {
 
 app.post('/', (req, res) => {
     const novoCarro = req.body;  // Obtem o corpo enviado para incluir um carro 
+    const carroExiste = carros2024.find(carro => carro.sigla === novoCarro.sigla);
+    if (carroExiste) {
+        return res.status(400).send('Já existe um carro cadastrado com essa sigla.');
+    }
+    //JOI
+    const { error } = modeloCarro.validate(novoCarro);
+    if ( error ){
+        // Se houver erro retorna 'erro 400 (Bad Request)'
+        res.status(400).send(error);
+        return;
+    }
     carros2024.push(novoCarro);  // Adiciona o novo carro  lista de carros 
-    res.status(200).send(novoCarro);  // Retorna o carro adicionado com o status 200 (ok!).
+    res.status(201).send(novoCarro);  // Retorna o carro adicionado com o status 201 (ok!).
 });
+
 
 
 app.put('/:sigla', (req, res) => {
@@ -42,6 +56,13 @@ app.put('/:sigla', (req, res) => {
         );
         return;
     };
+    // JOI
+    const{ error } = modeloAtualizacaoCarro.validate(req,body);
+    if (error) {
+        // se houver erro o modelo/validação retorna erro
+        res.status(400).send();
+        return;
+    }
     const campos = Object.keys(req.body); // obtem o corpo da requisição envida 
     for (let campo of campos) {
         carroSelecionado[campo] = req.body[campo]; // atualiza o carro com a informação 
